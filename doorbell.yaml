@@ -1,0 +1,110 @@
+esphome:
+  name: doorbell
+
+esp32:
+  board: esp32cam
+  framework:
+    type: arduino
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: "--YOUR KEY--"
+
+ota:
+  password: "--YOUR PASSWORD--"
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Doorbell Fallback Hotspot"
+    password: "--CUSTOM PASSWORD--"
+
+
+font:
+  - file: 'FreePixel.ttf'
+    id: font1
+    size: 18
+
+captive_portal:
+# Example configuration entry
+
+binary_sensor:
+  - platform: gpio
+    pin: GPIO2
+    name: zvonek
+    id: zvonek
+    filters:
+      - delayed_off: 3s
+    on_press:
+      then:
+        - display.page.show: page2
+    on_release:
+      then:
+        - display.page.show: page1
+
+esp32_camera:
+  external_clock:
+    pin: GPIO0
+    frequency: 20MHz
+  i2c_pins:
+    sda: GPIO26
+    scl: GPIO27
+  data_pins: [GPIO5, GPIO18, GPIO19, GPIO21, GPIO36, GPIO39, GPIO34, GPIO35]
+  vsync_pin: GPIO25
+  href_pin: GPIO23
+  pixel_clock_pin: GPIO22
+  power_down_pin: GPIO32
+  resolution: 320x240
+  max_framerate: 40 fps
+  idle_framerate: 1 fps
+  vertical_flip: false
+
+  # Image settings
+  name: doorbell
+  # ...
+
+# Example configuration entry
+i2c:
+  sda: GPIO15
+  scl: GPIO13
+
+animation:
+  - file: "home.gif"
+    id: home_anim
+
+display:
+  - platform: ssd1306_i2c
+    model: "SSD1306 128x64"
+    address: 0x3C
+    update_interval: 50ms
+    pages:
+      - id: page1
+        lambda: |-
+          id(home_anim).next_frame();
+          it.image(32, 0, id(home_anim), COLOR_ON, COLOR_OFF);
+      - id: page2
+        lambda: |-
+          it.print(20, 26, id(font1), "DOBRY DEN");
+
+switch:
+  - platform: restart
+    name: "Restart vrata cam"
+
+# Flashlight
+output:
+  - platform: gpio
+    pin: GPIO4
+    id: gpio_4
+    
+light:
+  - platform: binary
+    output: gpio_4
+    name: vrata cam light
+
